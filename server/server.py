@@ -15,10 +15,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from routes.system import router as system_router
 from routes.validate import router as validate_router
+from routes.settings import router as settings_router
 
 app = FastAPI(title="LectureScribe Desktop Backend")
 app.include_router(system_router)
 app.include_router(validate_router)
+app.include_router(settings_router)
 
 # Allow the Electron renderer (running on a local dev port or file://) to call us
 app.add_middleware(
