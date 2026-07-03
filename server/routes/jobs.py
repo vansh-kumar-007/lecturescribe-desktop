@@ -72,3 +72,25 @@ def open_pdf(payload: OpenPdfRequest):
         return {"opened": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not open PDF: {str(e)}")
+    
+import uuid
+from datetime import datetime
+
+
+@router.post("/dev-seed")
+def dev_seed_job():
+    """
+    DEV ONLY — creates a fake job entry to test Home/JobCard rendering.
+    Remove before v1 release.
+    """
+    jobs = load_jobs()
+    fake_job = {
+        "id": str(uuid.uuid4()),
+        "title": "Introduction to Fluid Mechanics",
+        "status": "done",
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "pdf_path": "",  # left empty on purpose — clicking won't open a real file yet
+    }
+    jobs.append(fake_job)
+    save_jobs(jobs)
+    return fake_job

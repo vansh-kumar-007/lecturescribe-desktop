@@ -33,6 +33,15 @@ function Home({ onNewJob }) {
         <button style={styles.newJobBtn} onClick={onNewJob}>
           <Plus size={16} /> New Job
         </button>
+        <button
+          style={{ ...styles.newJobBtn, backgroundColor: '#3f3f46', marginLeft: '8px' }}
+          onClick={async () => {
+          await fetch('http://127.0.0.1:7823/jobs/dev-seed', { method: 'POST' })
+          fetchJobs()
+                }}
+             >
+          + Seed test job (dev)
+        </button>                
       </div>
 
       {loading && (
