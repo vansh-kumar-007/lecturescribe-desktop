@@ -1,0 +1,3 @@
+[submodule "backend"]
+	path = backend
+	url = https://github.com/vansh-kumar-007/lecturescribe.git
