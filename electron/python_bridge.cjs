@@ -10,11 +10,11 @@ function getPythonPath() {
 
 function startPythonBackend() {
   const pythonPath = getPythonPath()
-  const serverPath = path.join(__dirname, '../backend/server.py')
+  const serverPath = path.join(__dirname, '../server/server.py')
 
   const proc = spawn(pythonPath, [serverPath], {
     env: { ...process.env, LECTURESCRIBE_PORT: '7823' },
-    cwd: path.join(__dirname, '../backend'),
+    cwd: path.join(__dirname, '../server'),
   })
 
   proc.stdout.on('data', (data) => console.log('[Python]', data.toString()))
