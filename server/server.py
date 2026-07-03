@@ -16,11 +16,13 @@ import uvicorn
 from routes.system import router as system_router
 from routes.validate import router as validate_router
 from routes.settings import router as settings_router
+from routes.jobs import router as jobs_router
 
 app = FastAPI(title="LectureScribe Desktop Backend")
 app.include_router(system_router)
 app.include_router(validate_router)
 app.include_router(settings_router)
+app.include_router(jobs_router)
 
 # Allow the Electron renderer (running on a local dev port or file://) to call us
 app.add_middleware(

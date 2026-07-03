@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Setup from './screens/Setup'
+import Home from './screens/Home'
 
 function App() {
   const [firstLaunch, setFirstLaunch] = useState(null) // null = not yet checked
@@ -32,21 +33,10 @@ function App() {
   }
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif', color: '#e5e5e5', backgroundColor: '#0f0f14', height: '100vh' }}>
-      <h1>LectureScribe Desktop</h1>
-      <p>Setup complete. Home dashboard comes in Phase 3.</p>
-      <button onClick={async () => {
-  await fetch('http://127.0.0.1:7823/settings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ setup_complete: false }),
-  })
-  window.location.reload()
-}}>
-        Reset setup (dev only)
-      </button>
-    </div>
-  )
+  <Home
+    onNewJob={() => alert('New Job screen coming in Phase 4')}
+  />
+)
 }
 
 export default App
