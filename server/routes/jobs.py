@@ -5,6 +5,8 @@ scanning, since GUI-created jobs are tracked independently going forward.
 """
 
 import os
+import uuid
+from datetime import datetime
 import json
 import subprocess
 import platform
@@ -26,7 +28,7 @@ def load_jobs():
     path = get_jobs_index_path()
     if not path.exists():
         return []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, "r", encoding="utf-8-sig") as f:
         return json.load(f)
 
 
@@ -73,8 +75,7 @@ def open_pdf(payload: OpenPdfRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not open PDF: {str(e)}")
     
-import uuid
-from datetime import datetime
+
 
 
 @router.post("/dev-seed")
@@ -94,3 +95,42 @@ def dev_seed_job():
     jobs.append(fake_job)
     save_jobs(jobs)
     return fake_job
+
+
+class NewJobRequest(BaseModel):
+    folder_path: str
+    title: str | None = None
+
+
+@router.post("/new")
+def create_job(payload: NewJobRequest):
+    folder = Path(payload.folder_path)
+
+    if not folder.exists() or not folder.is_dir():
+        raise HTTPException(status_code=400, detail="Folder does not exist or is not a directory")
+
+    # Basic sanity check — folder should contain at least one video-like file
+    video_extensions = {".mp4", ".mkv", ".mov", ".avi", ".webm"}
+    has_video = any(f.suffix.lower() in video_extensions for f in folder.iterdir() if f.is_file())
+
+    if not has_video:
+        raise HTTPException(status_code=400, detail="No video files found in this folder")
+
+    jobs = load_jobs()
+    job_id = str(uuid.uuid4())
+    title = payload.title or folder.name
+
+    new_job = {
+        "id": job_id,
+        "title": title,
+        "status": "queued",
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "source_type": "folder",
+        "source_path": str(folder),
+        "pdf_path": "",
+    }
+
+    jobs.append(new_job)
+    save_jobs(jobs)
+
+    return new_job

@@ -1,5 +1,4 @@
-const { contextBridge, ipcRenderer, shell } = require('electron')
-const { dialog } = require('@electron/remote') || {}
+const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('api', {
   openFile: () => ipcRenderer.invoke('dialog:openFile'),

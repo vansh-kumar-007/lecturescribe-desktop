@@ -1,4 +1,5 @@
 const { app, BrowserWindow } = require('electron')
+const { ipcMain, dialog, shell } = require('electron')
 const path = require('path')
 const { startPythonBackend, waitForBackend } = require('./python_bridge.cjs')
 let mainWindow
@@ -35,7 +36,21 @@ app.whenReady().then(async () => {
   } catch (err) {
     console.error('Backend failed to start:', err)
   }
+ipcMain.handle('dialog:openFolder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+  })
+  if (result.canceled) return null
+  return result.filePaths[0]
+})
 
+ipcMain.handle('shell:openPDF', async (event, path) => {
+  shell.openPath(path)
+})
+
+ipcMain.handle('shell:openExternal', async (event, url) => {
+  shell.openExternal(url)
+})
   createWindow()
 })
 
