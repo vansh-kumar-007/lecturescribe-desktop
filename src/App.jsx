@@ -3,11 +3,13 @@ import Setup from './screens/Setup'
 import Home from './screens/Home'
 import NewJob from './screens/NewJob'
 import Processing from './screens/Processing'
+import Result from './screens/Result'
 
 function App() {
   const [firstLaunch, setFirstLaunch] = useState(null) // null = not yet checked
   const [screen, setScreen] = useState('home') // 'home' | 'newJob' | 'processing'
   const [activeJob, setActiveJob] = useState(null)
+  const [finishedPdfPath, setFinishedPdfPath] = useState('')
 
   useEffect(() => {
     fetch('http://127.0.0.1:7823/settings')
@@ -53,14 +55,29 @@ function App() {
   }
 
   if (screen === 'processing') {
-    return (
-      <Processing
-        jobId={activeJob.id}
-        jobTitle={activeJob.title}
-        onDone={() => setScreen('home')}
-      />
-    )
-  }
+  return (
+    <Processing
+      jobId={activeJob.id}
+      jobTitle={activeJob.title}
+      onDone={() => setScreen('home')}
+      onFinished={({ pdfPath }) => {
+        setFinishedPdfPath(pdfPath)
+        setScreen('result')
+      }}
+    />
+  )
+}
+
+
+  if (screen === 'result') {
+  return (
+    <Result
+      jobTitle={activeJob.title}
+      pdfPath={finishedPdfPath}
+      onBackToHome={() => setScreen('home')}
+    />
+  )
+}
 
   // Home screen
   return (

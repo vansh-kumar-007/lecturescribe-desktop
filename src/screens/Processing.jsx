@@ -9,7 +9,7 @@ const STEP_LABELS = {
   complete: 'Done',
 }
 
-function Processing({ jobId, jobTitle, onDone }) {
+function Processing({ jobId, jobTitle, onDone, onFinished }) {
   const [status, setStatus] = useState('processing')
   const [step, setStep] = useState('transcription')
   const [progress, setProgress] = useState(5)
@@ -69,7 +69,11 @@ function Processing({ jobId, jobTitle, onDone }) {
   </>
 )}
 
-        {status === 'done' && (
+        {useEffect(() => {
+  if (status === 'done') {
+    onFinished({ pdfPath })
+  }
+}, [status])&& (
           <>
             <CheckCircle2 size={40} color="#22c55e" />
             <h2 style={styles.title}>Notes ready!</h2>
