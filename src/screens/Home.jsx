@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Plus, FileText, Clock, Loader2 } from 'lucide-react'
 import JobCard from '../components/JobCard'
+import { Plus, FileText, Loader2, Settings as SettingsIcon } from 'lucide-react'
 
-function Home({ onNewJob }) {
+function Home({ onNewJob, onSettings }) {
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -30,18 +30,26 @@ function Home({ onNewJob }) {
           <h1 style={styles.title}>Your Jobs</h1>
           <p style={styles.subtitle}>Lecture videos converted into notes</p>
         </div>
-        <button style={styles.newJobBtn} onClick={onNewJob}>
-          <Plus size={16} /> New Job
-        </button>
-        <button
-          style={{ ...styles.newJobBtn, backgroundColor: '#3f3f46', marginLeft: '8px' }}
-          onClick={async () => {
-          await fetch('http://127.0.0.1:7823/jobs/dev-seed', { method: 'POST' })
-          fetchJobs()
-                }}
-             >
-          + Seed test job (dev)
-        </button>                
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button style={styles.newJobBtn} onClick={onNewJob}>
+            <Plus size={16} /> New Job
+          </button>
+          <button
+            style={{ ...styles.newJobBtn, backgroundColor: '#3f3f46' }}
+            onClick={async () => {
+              await fetch('http://127.0.0.1:7823/jobs/dev-seed', { method: 'POST' })
+              fetchJobs()
+            }}
+          >
+            + Seed test job (dev)
+          </button>
+          <button
+            style={{ ...styles.newJobBtn, backgroundColor: '#27272e' }}
+            onClick={onSettings}
+          >
+            <SettingsIcon size={16} />
+          </button>
+        </div>
       </div>
 
       {loading && (

@@ -4,10 +4,11 @@ import Home from './screens/Home'
 import NewJob from './screens/NewJob'
 import Processing from './screens/Processing'
 import Result from './screens/Result'
+import Settings from './screens/Settings'
 
 function App() {
   const [firstLaunch, setFirstLaunch] = useState(null) // null = not yet checked
-  const [screen, setScreen] = useState('home') // 'home' | 'newJob' | 'processing'
+  const [screen, setScreen] = useState('home') // 'home' | 'newJob' | 'processing' | 'result' | 'settings'
   const [activeJob, setActiveJob] = useState(null)
   const [finishedPdfPath, setFinishedPdfPath] = useState('')
 
@@ -43,46 +44,53 @@ function App() {
 
   // New Job screen
   if (screen === 'newJob') {
-   return (
-     <NewJob
-       onCancel={() => setScreen('home')}
-       onCreated={(job) => {
-         setActiveJob(job)
-         setScreen('processing')
-       }}
-     />
-   )
+    return (
+      <NewJob
+        onCancel={() => setScreen('home')}
+        onCreated={(job) => {
+          setActiveJob(job)
+          setScreen('processing')
+        }}
+      />
+    )
   }
 
+  // Processing screen
   if (screen === 'processing') {
-  return (
-    <Processing
-      jobId={activeJob.id}
-      jobTitle={activeJob.title}
-      onDone={() => setScreen('home')}
-      onFinished={({ pdfPath }) => {
-        setFinishedPdfPath(pdfPath)
-        setScreen('result')
-      }}
-    />
-  )
-}
+    return (
+      <Processing
+        jobId={activeJob.id}
+        jobTitle={activeJob.title}
+        onDone={() => setScreen('home')}
+        onFinished={({ pdfPath }) => {
+          setFinishedPdfPath(pdfPath)
+          setScreen('result')
+        }}
+      />
+    )
+  }
 
-
+  // Result screen
   if (screen === 'result') {
-  return (
-    <Result
-      jobTitle={activeJob.title}
-      pdfPath={finishedPdfPath}
-      onBackToHome={() => setScreen('home')}
-    />
-  )
-}
+    return (
+      <Result
+        jobTitle={activeJob.title}
+        pdfPath={finishedPdfPath}
+        onBackToHome={() => setScreen('home')}
+      />
+    )
+  }
+
+  // Settings screen
+  if (screen === 'settings') {
+    return <Settings onBack={() => setScreen('home')} />
+  }
 
   // Home screen
   return (
     <Home
       onNewJob={() => setScreen('newJob')}
+      onSettings={() => setScreen('settings')}
     />
   )
 }
