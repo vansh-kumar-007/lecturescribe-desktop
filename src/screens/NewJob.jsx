@@ -13,26 +13,30 @@ function NewJob({ onCancel, onCreated }) {
   }
 
   async function handleCreate() {
-    setError('')
-    setCreating(true)
-    try {
-      const res = await fetch('http://127.0.0.1:7823/jobs/new', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder_path: folderPath, title: title || null }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.detail || 'Failed to create job')
-        setCreating(false)
-        return
-      }
-      onCreated(data)
-    } catch (err) {
-      setError('Could not reach backend.')
+  setError('')
+  setCreating(true)
+  try {
+    const res = await fetch('http://127.0.0.1:7823/jobs/new', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder_path: folderPath, title: title || null }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data.detail || 'Failed to create job')
       setCreating(false)
+      return
     }
+
+    // Auto-start the job immediately after creation
+    await fetch(`http://127.0.0.1:7823/jobs/${data.id}/start`, { method: 'POST' })
+
+    onCreated(data)
+  } catch (err) {
+    setError('Could not reach backend.')
+    setCreating(false)
   }
+}
 
   return (
     <div style={styles.container}>

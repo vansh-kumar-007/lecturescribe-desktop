@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import Setup from './screens/Setup'
 import Home from './screens/Home'
 import NewJob from './screens/NewJob'
+import Processing from './screens/Processing'
 
 function App() {
   const [firstLaunch, setFirstLaunch] = useState(null) // null = not yet checked
-  const [screen, setScreen] = useState('home') // 'home' | 'newJob'
+  const [screen, setScreen] = useState('home') // 'home' | 'newJob' | 'processing'
+  const [activeJob, setActiveJob] = useState(null)
 
   useEffect(() => {
     fetch('http://127.0.0.1:7823/settings')
@@ -39,13 +41,23 @@ function App() {
 
   // New Job screen
   if (screen === 'newJob') {
+   return (
+     <NewJob
+       onCancel={() => setScreen('home')}
+       onCreated={(job) => {
+         setActiveJob(job)
+         setScreen('processing')
+       }}
+     />
+   )
+  }
+
+  if (screen === 'processing') {
     return (
-      <NewJob
-        onCancel={() => setScreen('home')}
-        onCreated={(job) => {
-          console.log('Job created:', job)
-          setScreen('home')
-        }}
+      <Processing
+        jobId={activeJob.id}
+        jobTitle={activeJob.title}
+        onDone={() => setScreen('home')}
       />
     )
   }
