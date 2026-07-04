@@ -13,6 +13,10 @@ import platform
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+import subprocess as sp
+import sys
+import threading
+from pipeline_runner import start_pipeline_thread
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -134,3 +138,70 @@ def create_job(payload: NewJobRequest):
     save_jobs(jobs)
 
     return new_job
+
+
+
+# Track running subprocess handles per job_id so we can check status / cancel later
+running_processes = {}
+
+
+from pipeline_runner import start_pipeline_thread
+
+
+@router.post("/{job_id}/start")
+def start_job(job_id: str):
+    jobs = load_jobs()
+    job = next((j for j in jobs if j["id"] == job_id), None)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.get("status") == "processing":
+        raise HTTPException(status_code=400, detail="Job is already processing")
+    if job.get("status") == "done":
+        raise HTTPException(status_code=400, detail="Job has already completed")
+
+    def update_job_status(jid, updates):
+        current = load_jobs()
+        for j in current:
+            if j["id"] == jid:
+                j.update(updates)
+        save_jobs(current)
+
+    def mark_failed(jid, error_str):
+        # Keep it human-readable — map known error substrings, fallback generic
+        if "ResourceExhausted" in error_str or "rate" in error_str.lower():
+            msg = "NVIDIA's servers are busy right now. Please try again shortly."
+        elif "OutOfMemoryError" in error_str or "CUDA out of memory" in error_str:
+            msg = "Not enough GPU memory to process this video."
+        elif "mmdc" in error_str.lower():
+            msg = "Diagram rendering tool not found. Try reinstalling Mermaid CLI."
+        elif "Connection" in error_str:
+            msg = "No internet connection. Check your network and try again."
+        else:
+            msg = "Something went wrong while processing this job."
+
+        update_job_status(
+            jid,
+            {
+                "status": "failed",
+                "error_message": msg,
+                "error_raw": error_str[-500:],
+            },
+        )
+
+    start_pipeline_thread(
+        job_id,
+        job["source_path"],
+        job["title"],
+        update_job_status,
+        mark_failed,
+    )
+
+    return {"started": True, "job_id": job_id}
+
+def _update_job(job_id: str, updates: dict):
+    jobs = load_jobs()
+    for j in jobs:
+        if j["id"] == job_id:
+            j.update(updates)
+    save_jobs(jobs)
