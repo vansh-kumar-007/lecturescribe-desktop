@@ -1,7 +1,8 @@
 """
 Standalone job runner — invoked as a subprocess so it can be forcibly
 terminated (for cancel support), unlike a background thread.
-Usage: python run_job.py <job_id> <source_path> <title>
+Usage: python run_job.py <job_id> <source_path_or_url> <title> <source_type>
+source_type: "folder" | "url" | "playlist"
 """
 
 import sys
@@ -15,9 +16,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import workspace_manager
 import utils
+import transcriber
 import nemotron
 import diagram_renderer
 import pdf_renderer
+import playlist_manager
 
 
 def get_jobs_index_path():
@@ -64,6 +67,7 @@ def main():
     job_id = sys.argv[1]
     source_path = sys.argv[2]
     title = sys.argv[3]
+    source_type = sys.argv[4] if len(sys.argv) > 4 else "folder"
 
     try:
         settings_path = get_settings_path()
@@ -76,12 +80,37 @@ def main():
         update_job(job_id, {"status": "processing", "pipeline_step": "transcription"})
 
         wm_job = workspace_manager.create_job(
-            source=source_path, source_type="folder", title=title, config={}
+            source=source_path, source_type=source_type, title=title, config={}
         )
         wm_job.create_dirs()
         update_job(job_id, {"workspace_dir": str(wm_job.dir)})
 
-        transcript, _ = utils.get_folder_transcript(source_path, use_srt=True, job=wm_job)
+        if source_type == "folder":
+            transcript, _ = utils.get_folder_transcript(source_path, use_srt=True, job=wm_job)
+
+        elif source_type == "url":
+            audio_path = utils.extract_audio(source_path, job=wm_job)
+            transcript = transcriber.transcribe_segmented(audio_path, job=wm_job)
+
+        elif source_type == "playlist":
+            videos = playlist_manager.fetch_playlist_videos(source_path)
+            all_transcripts = []
+            for i, v in enumerate(videos):
+                idx = i + 1
+                update_job(job_id, {
+                    "pipeline_step": "transcription",
+                    "playlist_progress": f"{idx}/{len(videos)}",
+                })
+                audio = playlist_manager.download_video_audio(v["url"], wm_job, idx)
+                text = transcriber.transcribe_segmented(audio, job=wm_job)
+                all_transcripts.append(text)
+                playlist_manager.mark_video_done(wm_job, idx)
+
+            transcript = "\n\n".join(all_transcripts)
+            wm_job.merged_transcript.write_text(transcript, encoding="utf-8")
+
+        else:
+            raise ValueError(f"Unknown source_type: {source_type}")
 
         update_job(job_id, {"pipeline_step": "nemotron"})
         notes = nemotron.analyze_transcript(transcript, job=wm_job)

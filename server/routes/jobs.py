@@ -106,34 +106,58 @@ def dev_seed_job():
 
 
 class NewJobRequest(BaseModel):
-    folder_path: str
+    folder_path: str | None = None
+    url: str | None = None
     title: str | None = None
 
 
 @router.post("/new")
 def create_job(payload: NewJobRequest):
-    folder = Path(payload.folder_path)
+    if payload.folder_path:
+        folder = Path(payload.folder_path)
 
-    if not folder.exists() or not folder.is_dir():
-        raise HTTPException(status_code=400, detail="Folder does not exist or is not a directory")
+        if not folder.exists() or not folder.is_dir():
+            raise HTTPException(status_code=400, detail="Folder does not exist or is not a directory")
 
-    video_extensions = {".mp4", ".mkv", ".mov", ".avi", ".webm"}
-    has_video = any(f.suffix.lower() in video_extensions for f in folder.iterdir() if f.is_file())
+        video_extensions = {".mp4", ".mkv", ".mov", ".avi", ".webm"}
+        has_video = any(f.suffix.lower() in video_extensions for f in folder.iterdir() if f.is_file())
 
-    if not has_video:
-        raise HTTPException(status_code=400, detail="No video files found in this folder")
+        if not has_video:
+            raise HTTPException(status_code=400, detail="No video files found in this folder")
+
+        source_type = "folder"
+        source_path = str(folder)
+        title = payload.title or folder.name
+
+    elif payload.url:
+        url = payload.url.strip()
+        if not url.startswith("http"):
+            raise HTTPException(status_code=400, detail="Please enter a valid URL")
+
+        # Detect playlist vs single video using the CLI's own detection logic
+        import sys as _sys
+        cli_root = Path(__file__).parent.parent.parent / "backend"
+        if str(cli_root) not in _sys.path:
+            _sys.path.insert(0, str(cli_root))
+        import playlist_manager
+
+        source_type = "playlist" if playlist_manager.is_playlist(url) else "url"
+        source_path = url
+        title = payload.title or ("Playlist" if source_type == "playlist" else "Video")
+
+    else:
+        raise HTTPException(status_code=400, detail="Provide either a folder_path or a url")
 
     jobs = load_jobs()
     job_id = str(uuid.uuid4())
-    title = payload.title or folder.name
 
     new_job = {
         "id": job_id,
         "title": title,
         "status": "queued",
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "source_type": "folder",
-        "source_path": str(folder),
+        "source_type": source_type,
+        "source_path": source_path,
         "pdf_path": "",
     }
 
@@ -160,7 +184,7 @@ def start_job(job_id: str):
     runner_script = Path(__file__).parent.parent / "run_job.py"
 
     proc = sp.Popen(
-        [sys.executable, str(runner_script), job_id, job["source_path"], job["title"]],
+        [sys.executable, str(runner_script), job_id, job["source_path"], job["title"], job.get("source_type", "folder")],
         cwd=str(Path(__file__).parent.parent),
     )
     running_processes[job_id] = proc
